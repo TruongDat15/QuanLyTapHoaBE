@@ -12,7 +12,7 @@ import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepo;
 
 @RestController
-@RequestMapping("/api/connection-test")
+@RequestMapping("")
 public class DatabaseTestController {
 
     private final UserRepo userRepository;
@@ -39,9 +39,8 @@ public class DatabaseTestController {
             return ResponseEntity.ok(users);
             
         } catch (Exception e) {
-            // Nếu có lỗi, in ra console và trả về lỗi 500
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body("LỖI KẾT NỐI DB: Kiểm tra application.properties và XAMPP đã chạy chưa.");
+// Nếu có lỗi, in ra console và trả về lỗi 500
+                        return ResponseEntity.internalServerError().body("LỖI KẾT NỐI DB: Kiểm tra application.properties và XAMPP đã chạy chưa.");
         }
     }
 }
