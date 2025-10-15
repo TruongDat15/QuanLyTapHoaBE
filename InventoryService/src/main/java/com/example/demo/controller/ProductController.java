@@ -36,22 +36,39 @@ public class ProductController {
 
     @GetMapping("/barcode/{barcode}")
     public ResponseEntity<?> getByBarcode(@PathVariable String barcode) {
-        Optional<Product> product = productRepository.findByBarcode(barcode);
-        if (product.isEmpty()) {
+        Optional<ProductResponse> productResponseOpt = productService.getProductByBarcode(barcode);
+        if (productResponseOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", "Product not found", "barcode", barcode));
         }
+        return ResponseEntity.ok(productResponseOpt.get());
+    }
 
-        Product p = product.get();
-        Map<String, Object> response = new HashMap<>();
-        response.put("productId", p.getProductId());
-        response.put("productName", p.getProductName());
-        response.put("barcode", p.getBarcode());
-        response.put("price", p.getSellingPrice());
-        response.put("quantityInStock", p.getQuantityInStock());
-        response.put("categoryName", p.getCategory().getCategoryName());
+    @PostMapping
+    public ResponseEntity<ProductResponse> createProduct(@RequestBody ProductRequest productRequest) {
+        ProductResponse createdProduct = productService.createProduct(productRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
+    }
 
-        return ResponseEntity.ok(response);
+    @PutMapping("/{productId}")
+    public ResponseEntity<?> updateProduct(@PathVariable Integer productId, @RequestBody ProductRequest productRequest) {
+        Optional<ProductResponse> updatedProductOpt = productService.updateProduct(productId, productRequest);
+        if (updatedProductOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Product not found", "productId", productId));
+        }
+        return ResponseEntity.ok(updatedProductOpt.get());
+    }
+
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<?> deleteProduct(@PathVariable Integer productId) {
+        Optional<Product> productOpt = productRepository.findById(productId);
+        if (productOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Product not found", "productId", productId));
+        }
+        productService.deleteProduct(productId);
+        return ResponseEntity.noContent().build();
     }
 
 }

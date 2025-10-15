@@ -8,7 +8,11 @@ import com.example.demo.repository.CategoryRepository;
 import com.example.demo.repository.ProductRepository;
 import com.example.demo.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -38,45 +42,110 @@ public class ProductImpl implements ProductService {
     }
 
     @Override
-    public String addProduct(ProductRequest productRequest) {
-        return "";
+    public Optional<ProductResponse> getProductByBarcode(String barcode) {
+
+        Optional<Product> productOpt = productRepository.findByBarcode(barcode);
+        return productOpt.map(product -> ProductResponse.builder()
+                .productName(product.getProductName())
+                .categoryName(product.getCategory() != null ? product.getCategory().getCategoryName() : null)
+                .unit(product.getUnit())
+                .barcode(product.getBarcode())
+                .sellingPrice(product.getSellingPrice())
+                .quantityInStock(product.getQuantityInStock())
+                .build());
     }
+
+
 
     @Override
-    public Optional<ProductRequest> updateProduct(Integer productId, ProductRequest productRequest) {
-        return Optional.empty();
+    public Optional<ProductResponse> updateProduct(Integer productId, ProductRequest productRequest) {
+        Optional<Product> productOpt = productRepository.findById(productId);
+        if (productOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Product product = productOpt.get();
+
+        Category category = null;
+        if (productRequest.getCategoryId() != null) {
+            category = categoryRepository.findById(productRequest.getCategoryId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid category ID"));
+        }
+
+        String barcode = productRequest.getBarcode();
+        if (barcode != null && !barcode.equals(product.getBarcode()) && productRepository.findByBarcode(barcode).isPresent()){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Barcode already exists");
+        }
+
+        product.setProductName(productRequest.getProductName());
+        product.setCategory(category);
+        product.setUnit(productRequest.getUnit());
+        product.setBarcode(productRequest.getBarcode());
+        product.setSellingPrice(productRequest.getSellingPrice());
+        product.setQuantityInStock(productRequest.getQuantityInStock());
+        product.setLastUpdated(LocalDateTime.now());
+
+        Product updatedProduct = productRepository.save(product);
+
+        ProductResponse productResponse = ProductResponse.builder()
+                .productName(updatedProduct.getProductName())
+                .categoryName(updatedProduct.getCategory() != null ? updatedProduct.getCategory().getCategoryName() : null)
+                .unit(updatedProduct.getUnit())
+                .barcode(updatedProduct.getBarcode())
+                .sellingPrice(updatedProduct.getSellingPrice())
+                .quantityInStock(updatedProduct.getQuantityInStock())
+                .build();
+
+        return Optional.of(productResponse);
     }
 
 
-//    public String addProduct(ProductRequest productRequest) {
-//
-//        if(productRepository.existsByBarcode(productRequest.getBarcode())){
-//            throw new RuntimeException("Ma barcode da ton tai");
-//        }
-//        Optional<Category> category = categoryRepository.findById(productRequest.getCategoryId());
-//        if(category.isEmpty()){
-//            throw new RuntimeException("Khong tim thay category voi id: " + productRequest.getCategoryId());
-//        }
-//        Product product = Product.builder()
-//                .productName(productRequest.getProductName())
-//                .unit(productRequest.getUnit())
-//                .barcode(productRequest.getBarcode())
-//                .sellingPrice(productRequest.getSellingPrice())
-//                .costOfCapital(productRequest.getCostOfCapital())
-//                .quantityInStock(productRequest.getQuantityInStock())
-//                .isActive(productRequest.getIsActive())
-//                .category(category.get())
-//                .build();
-//
-//
-//                productRepository.save(product);
-//                return "Them san pham thanh cong";
-//    }
 
 
     @Override
     public void deleteProduct(Integer productId) {
+        if (!productRepository.existsById(productId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found");
+        }
 
+        productRepository.deleteById(productId);
+    }
+
+
+
+    @Override
+    public ProductResponse createProduct(ProductRequest productRequest) {
+        Category category = null;
+        if (productRequest.getCategoryId() != null) {
+            category = categoryRepository.findById(productRequest.getCategoryId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid category ID"));
+        }
+
+        String barcode = productRequest.getBarcode();
+        if (barcode != null && productRepository.findByBarcode(barcode).isPresent()){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Barcode already exists");
+        }
+
+        Product product = Product.builder()
+                .productName(productRequest.getProductName())
+                .category(category)
+                .unit(productRequest.getUnit())
+                .barcode(productRequest.getBarcode())
+                .sellingPrice(productRequest.getSellingPrice())
+                .quantityInStock(productRequest.getQuantityInStock())
+                .lastUpdated(LocalDateTime.now())
+                .build();
+
+        Product savedProduct = productRepository.save(product);
+
+        return ProductResponse.builder()
+                .productName(savedProduct.getProductName())
+                .categoryName(savedProduct.getCategory() != null ? savedProduct.getCategory().getCategoryName() : null)
+                .unit(savedProduct.getUnit())
+                .barcode(savedProduct.getBarcode())
+                .sellingPrice(savedProduct.getSellingPrice())
+                .quantityInStock(savedProduct.getQuantityInStock())
+                .build();
     }
 
 
