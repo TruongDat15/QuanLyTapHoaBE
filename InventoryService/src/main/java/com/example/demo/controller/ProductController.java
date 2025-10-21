@@ -23,6 +23,7 @@ public class ProductController {
     private final ProductService productService;
     private final com.example.demo.repository.ProductRepository productRepository;
 
+
     @GetMapping
     public List<ProductResponse> getAllProduct(){
         return productService.getAllProducts();

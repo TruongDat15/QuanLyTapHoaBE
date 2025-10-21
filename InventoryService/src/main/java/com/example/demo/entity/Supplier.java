@@ -2,6 +2,8 @@ package com.example.demo.entity;
 
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,5 +29,6 @@ public class Supplier {
     private String note;
 
     @OneToMany(mappedBy = "supplier", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<ImportProduct> importProducts;
 }
